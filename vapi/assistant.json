@@ -1,0 +1,53 @@
+{
+  "name": "Atlas CRM voice assistant",
+  "firstMessage": "Hi, this is your CRM assistant. Ask me about a contact, a deal, or the pipeline.",
+  "serverMessages": ["tool-calls", "end-of-call-report"],
+  "server": {
+    "url": "https://REPLACE-WITH-YOUR-TUNNEL/vapi/webhook"
+  },
+  "transcriber": { "provider": "deepgram", "model": "nova-2" },
+  "voice": { "provider": "vapi", "voiceId": "Elliot" },
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a voice assistant for a sales CRM. You ONLY look up and report information — you can never create, change, or delete records, and you must never imply that you can. When the user asks about a contact, deal, account, or the pipeline, call the matching tool, then answer in one or two short spoken sentences. Speak amounts naturally (e.g. 'two hundred forty thousand dollars'), not as digits. If a tool returns found=false, say you couldn't find a match and ask the user to repeat the name. If a result is marked ambiguous, mention there are multiple matches and read the first. Keep replies brief and conversational — this is a phone-style voice call, not a written report."
+      }
+    ],
+    "tools": [
+      { "type": "function", "function": {
+        "name": "find_contact",
+        "description": "Look up a CRM contact by name and return their title, account, and open deals.",
+        "parameters": { "type": "object",
+          "properties": { "name": { "type": "string", "description": "Full or partial contact name." } },
+          "required": ["name"] } } },
+      { "type": "function", "function": {
+        "name": "get_deal",
+        "description": "Get the status of a single deal by name: stage, amount, probability, close date, owner.",
+        "parameters": { "type": "object",
+          "properties": { "name": { "type": "string", "description": "Full or partial deal name." } },
+          "required": ["name"] } } },
+      { "type": "function", "function": {
+        "name": "list_deals",
+        "description": "List deals, optionally filtered by stage, owner, or open-only.",
+        "parameters": { "type": "object",
+          "properties": {
+            "stage": { "type": "string", "description": "Filter by stage, e.g. 'Negotiation'." },
+            "owner": { "type": "string", "description": "Filter by deal owner name." },
+            "open_only": { "type": "boolean", "description": "If true, only deals in an open stage." }
+          } } } },
+      { "type": "function", "function": {
+        "name": "pipeline_summary",
+        "description": "Summarize the open pipeline: total open value, weighted forecast, totals by stage.",
+        "parameters": { "type": "object", "properties": {} } } },
+      { "type": "function", "function": {
+        "name": "account_overview",
+        "description": "Return an account with its industry, tier, contacts, deals, and total open value.",
+        "parameters": { "type": "object",
+          "properties": { "name": { "type": "string", "description": "Full or partial account name." } },
+          "required": ["name"] } } }
+    ]
+  }
+}
